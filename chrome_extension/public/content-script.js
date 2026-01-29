@@ -32,7 +32,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
-  return false;
+  return true;
 });
 
 console.log('[EkaScribe] Content script loaded');

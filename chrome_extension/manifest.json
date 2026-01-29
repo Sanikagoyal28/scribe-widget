@@ -32,19 +32,23 @@
     "default_path": "sidepanel.html"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
       "js": ["content-script.js"],
-      "run_at": "document_start"
+      "run_at": "document_end"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["iframe.html", "iframe.js"],
+      "resources": ["iframe.html", "iframe.js", "audio-recording.js"],
       "matches": ["<all_urls>"]
     }
-  ]
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src-elem 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; object-src 'self';"
+  }
 }

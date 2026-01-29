@@ -12,14 +12,17 @@ function copyExtensionFiles() {
       const publicDir = resolve(__dirname, 'public');
 
       // Copy manifest.json
-      copyFileSync(
-        resolve(__dirname, 'manifest.json'),
-        resolve(distDir, 'manifest.json')
-      );
+      copyFileSync(resolve(__dirname, 'manifest.json'), resolve(distDir, 'manifest.json'));
 
       // Copy all public files
-      const publicFiles = ['background.js', 'content-script.js', 'iframe.html', 'iframe.js'];
-      publicFiles.forEach(file => {
+      const publicFiles = [
+        'background.js',
+        'content-script.js',
+        'iframe.html',
+        'iframe.js',
+        'audio-recording.js',
+      ];
+      publicFiles.forEach((file) => {
         const srcPath = resolve(publicDir, file);
         if (existsSync(srcPath)) {
           copyFileSync(srcPath, resolve(distDir, file));
@@ -36,14 +39,11 @@ function copyExtensionFiles() {
       const srcIconsDir = resolve(publicDir, 'icons');
       if (existsSync(srcIconsDir)) {
         const iconFiles = readdirSync(srcIconsDir);
-        iconFiles.forEach(file => {
-          copyFileSync(
-            resolve(srcIconsDir, file),
-            resolve(iconsDir, file)
-          );
+        iconFiles.forEach((file) => {
+          copyFileSync(resolve(srcIconsDir, file), resolve(iconsDir, file));
         });
       }
-    }
+    },
   };
 }
 

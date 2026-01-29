@@ -4,51 +4,28 @@
  * 1. Microphone permission management
  */
 
-interface AudioRecordingState {
-  isRecording: boolean;
-  audioContext: AudioContext | null;
-  mediaStream: MediaStream | null;
-  processor: AudioWorkletNode | null;
-  vadProcessor: AudioWorkletNode | null;
-  startTime: number;
-  sessionId: string;
-  chunks: AudioChunk[];
-}
-
-interface AudioChunk {
-  data: Float32Array;
-  timestamp: number;
-  duration: number;
-  isVoice: boolean;
-}
-
-interface PermissionResult {
-  granted: boolean;
-  message?: string;
-  micType: string; // 'granted', 'prompt', 'denied', 'unknown'
-  requiresUserAction?: boolean;
-}
-
 class AudioRecordingManager {
-  private state: AudioRecordingState = {
-    isRecording: false,
-    audioContext: null,
-    mediaStream: null,
-    processor: null,
-    vadProcessor: null,
-    startTime: 0,
-    sessionId: '',
-    chunks: [],
-  };
+  constructor() {
+    this.state = {
+      isRecording: false,
+      audioContext: null,
+      mediaStream: null,
+      processor: null,
+      vadProcessor: null,
+      startTime: 0,
+      sessionId: '',
+      chunks: [],
+    };
+  }
 
   /**
    * Check and request microphone permissions
    */
-  async checkMicrophonePermission(): Promise<PermissionResult> {
+  async checkMicrophonePermission() {
     try {
       // First check navigator permissions
       const permissionStatus = await navigator.permissions.query({
-        name: 'microphone' as PermissionName,
+        name: 'microphone',
       });
 
       console.log('Microphone permission status:', permissionStatus.state);
