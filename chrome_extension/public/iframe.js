@@ -6,4 +6,5 @@ navigator.mediaDevices
   })
   .catch((error) => {
     console.error('Microphone access denied:', error);
+    chrome.runtime.sendMessage({ command: 'audioAccessDenied', error: error.message });
   });
