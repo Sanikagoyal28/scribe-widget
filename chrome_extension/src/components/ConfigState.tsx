@@ -3,12 +3,14 @@ import { LogoIcon } from './Icons';
 
 interface ConfigStateProps {
   onSubmit: (accessToken: string, baseUrl: string) => void;
+  onTestEMR?: () => void;
   initialAccessToken?: string;
   initialBaseUrl?: string;
 }
 
 export function ConfigState({
   onSubmit,
+  onTestEMR,
   initialAccessToken = '',
   initialBaseUrl = '',
 }: ConfigStateProps) {
@@ -91,6 +93,17 @@ export function ConfigState({
         <button type="submit" className="primary-btn">
           Continue
         </button>
+
+        {onTestEMR && (
+          <button
+            type="button"
+            className="secondary-btn"
+            onClick={onTestEMR}
+            style={{ marginTop: '12px' }}
+          >
+            Test EMR Data
+          </button>
+        )}
       </form>
     </div>
   );
