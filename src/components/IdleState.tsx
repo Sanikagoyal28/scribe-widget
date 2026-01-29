@@ -11,7 +11,7 @@ export function IdleState({ onStartRecording }: IdleStateProps) {
         <div className="logo-icon">
           <LogoIcon />
         </div>
-        <span className="logo-text">eka.scribe</span>
+        <span className="logo-text">scribe</span>
       </div>
       <button className="start-btn" onClick={onStartRecording}>
         Start Recording

@@ -1,6 +1,6 @@
 {
   "name": "scribe-widget",
-  "version": "1.0.6",
+  "version": "1.0.17",
   "description": "Floating panel widget for medical transcription using eka.scribe",
   "main": "dist/scribe-widget.umd.js",
   "module": "dist/scribe-widget.es.js",
@@ -8,13 +8,14 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:extension": "vite build && node scripts/build-extension.js",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run clean && npm run build"
   },
   "dependencies": {
-    "med-scribe-alliance-ts-sdk": "1.0.3",
+    "med-scribe-alliance-ts-sdk": "1.0.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

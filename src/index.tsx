@@ -124,7 +124,9 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
 
     console.log(widgetInstance, 'widget instance');
     if (!widgetInstance) {
-      init({});
+      init({
+        baseUrl: '',
+      });
     }
   };
 

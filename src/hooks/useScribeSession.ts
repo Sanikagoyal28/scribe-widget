@@ -7,10 +7,12 @@ interface UseScribeSessionReturn {
   elapsedTime: number;
   result: GetSessionStatusResponse | null;
   errorMessage: string;
+  initializeSDK: () => Promise<void>;
   startRecording: () => Promise<void>;
   pauseRecording: () => void;
   resumeRecording: () => void;
   stopRecording: () => Promise<void>;
+  retryPolling: () => Promise<void>;
   reset: () => void;
 }
 
@@ -25,41 +27,47 @@ export function useScribeSession(config: ScribeWidgetConfig): UseScribeSessionRe
   const startTimeRef = useRef<number>(0);
   const pausedTimeRef = useRef<number>(0);
 
-  const log = useCallback((...args: unknown[]) => {
-    if (config.debug) {
-      console.log('[EkaScribe]', ...args);
-    }
-  }, [config.debug]);
+  const log = useCallback(
+    (...args: unknown[]) => {
+      if (config.debug) {
+        console.log('[EkaScribe]', ...args);
+      }
+    },
+    [config.debug]
+  );
 
-  // Initialize SDK client only when baseUrl is provided
-  useEffect(() => {
+  // Initialize SDK client - can be called explicitly
+  const initializeSDK = useCallback(async () => {
     if (!config.baseUrl) {
       log('Skipping SDK init - no baseUrl provided');
       return;
     }
 
-    const initClient = async () => {
-      try {
-        clientRef.current = new ScribeClient({
-          apiKey: config.apiKey,
-          baseUrl: config.baseUrl,
-          debug: config.debug,
-        });
-        await clientRef.current.init();
-        log('SDK initialized');
-      } catch (error) {
-        log('Failed to initialize SDK', error);
-      }
-    };
+    try {
+      // Reset the singleton instance to ensure fresh config is used
+      ScribeClient.resetInstance();
 
-    initClient();
+      // Get new instance with current config
+      clientRef.current = ScribeClient.getInstance({
+        accessToken: config.accessToken,
+        baseUrl: config.baseUrl,
+        debug: config.debug,
+      });
+      await clientRef.current.init();
+      log('SDK initialized');
+    } catch (error) {
+      log('Failed to initialize SDK', error);
+    }
+  }, [config.accessToken, config.baseUrl, config.debug, log]);
 
+  // Cleanup timer on unmount
+  useEffect(() => {
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
     };
-  }, [config.apiKey, config.baseUrl, config.debug, log]);
+  }, []);
 
   const startTimer = useCallback(() => {
     timerRef.current = window.setInterval(() => {
@@ -87,7 +95,7 @@ export function useScribeSession(config: ScribeWidgetConfig): UseScribeSessionRe
   const requestMicrophonePermission = async (): Promise<boolean> => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       return true;
     } catch (error) {
       log('Microphone permission denied', error);
@@ -95,10 +103,49 @@ export function useScribeSession(config: ScribeWidgetConfig): UseScribeSessionRe
     }
   };
 
-  const showError = useCallback((message: string) => {
+  const showError = useCallback((message: string, isPollingError: boolean = false) => {
     setErrorMessage(message);
-    setState('error');
+    setState(isPollingError ? 'polling_error' : 'error');
   }, []);
+
+  // Polling function - extracted to be reusable for retry
+  const pollForResults = useCallback(async (): Promise<boolean> => {
+    if (!clientRef.current) {
+      showError('SDK not initialized. Please try again.', true);
+      return false;
+    }
+
+    try {
+      setState('processing');
+      log('Polling for completion...');
+
+      const finalResult = await clientRef.current.pollForCompletion(undefined, {
+        maxAttempts: 60,
+        intervalMs: 2000,
+        onProgress: (status) => {
+          log('Status update:', status.status);
+        },
+      });
+
+      setResult(finalResult);
+      log('Final result:', finalResult);
+
+      setState('results');
+
+      if (config.onResult) {
+        config.onResult(finalResult);
+      }
+
+      return true;
+    } catch (error) {
+      log('Polling failed', error);
+      showError('Failed to fetch results. Please retry.', true);
+      if (config.onError && error instanceof Error) {
+        config.onError(error);
+      }
+      return false;
+    }
+  }, [config, log, showError]);
 
   const startRecording = useCallback(async () => {
     const permission = await checkMicrophonePermission();
@@ -126,7 +173,7 @@ export function useScribeSession(config: ScribeWidgetConfig): UseScribeSessionRe
       setState('recording');
 
       await clientRef.current.startRecording({
-        templates: config.templates || ['soap'],
+        templates: ['eka_emr_template'],
         languageHint: config.languageHint,
       });
 
@@ -180,23 +227,8 @@ export function useScribeSession(config: ScribeWidgetConfig): UseScribeSessionRe
       const endResponse = await clientRef.current.endRecording();
       log('Recording ended', endResponse);
 
-      log('Polling for completion...');
-      const finalResult = await clientRef.current.pollForCompletion(undefined, {
-        maxAttempts: 60,
-        intervalMs: 2000,
-        onProgress: (status) => {
-          log('Status update:', status.status);
-        },
-      });
-
-      setResult(finalResult);
-      log('Final result:', finalResult);
-
-      setState('results');
-
-      if (config.onResult) {
-        config.onResult(finalResult);
-      }
+      // Poll for results
+      await pollForResults();
     } catch (error) {
       log('Failed to stop recording', error);
       showError('Failed to process recording. Please try again.');
@@ -204,7 +236,13 @@ export function useScribeSession(config: ScribeWidgetConfig): UseScribeSessionRe
         config.onError(error);
       }
     }
-  }, [config, log, showError, stopTimer]);
+  }, [config, log, showError, stopTimer, pollForResults]);
+
+  // Retry polling - can be called when polling fails
+  const retryPolling = useCallback(async () => {
+    log('Retrying polling...');
+    await pollForResults();
+  }, [log, pollForResults]);
 
   const reset = useCallback(() => {
     setResult(null);
@@ -218,10 +256,12 @@ export function useScribeSession(config: ScribeWidgetConfig): UseScribeSessionRe
     elapsedTime,
     result,
     errorMessage,
+    initializeSDK,
     startRecording,
     pauseRecording,
     resumeRecording,
     stopRecording,
+    retryPolling,
     reset,
   };
 }

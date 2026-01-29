@@ -2,17 +2,17 @@ import { useState } from 'react';
 import { LogoIcon } from './Icons';
 
 interface ConfigStateProps {
-  onSubmit: (apiKey: string, baseUrl: string) => void;
-  initialApiKey?: string;
+  onSubmit: (accessToken: string, baseUrl: string) => void;
+  initialAccessToken?: string;
   initialBaseUrl?: string;
 }
 
 export function ConfigState({
   onSubmit,
-  initialApiKey = '',
+  initialAccessToken = '',
   initialBaseUrl = '',
 }: ConfigStateProps) {
-  const [apiKey, setApiKey] = useState(initialApiKey);
+  const [accessToken, setAccessToken] = useState(initialAccessToken);
   const [baseUrl, setBaseUrl] = useState(initialBaseUrl);
   const [error, setError] = useState('');
 
@@ -25,7 +25,7 @@ export function ConfigState({
     }
 
     setError('');
-    onSubmit(apiKey.trim(), baseUrl.trim());
+    onSubmit(accessToken.trim(), baseUrl.trim());
   };
 
   return (
@@ -44,13 +44,13 @@ export function ConfigState({
 
       <form className="config-form" onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="eka-api-key">API Key</label>
+          <label htmlFor="eka-access-token">Access Token</label>
           <input
-            id="eka-api-key"
+            id="eka-access-token"
             type="text"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="Enter your API key (optional)"
+            value={accessToken}
+            onChange={(e) => setAccessToken(e.target.value)}
+            placeholder="Enter your access token (optional)"
           />
         </div>
 

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { FloatingPanel } from './components/FloatingPanel';
 import { ConfigState } from './components/ConfigState';
 import { IdleState } from './components/IdleState';
@@ -7,6 +7,7 @@ import { RecordingState } from './components/RecordingState';
 import { ProcessingState } from './components/ProcessingState';
 import { ResultsState } from './components/ResultsState';
 import { ErrorState } from './components/ErrorState';
+import { PollingErrorState } from './components/PollingErrorState';
 import { useScribeSession } from './hooks/useScribeSession';
 import { ScribeWidgetConfig } from './types';
 
@@ -17,8 +18,8 @@ interface AppProps {
 
 export function App({ config: initialConfig, onClose }: AppProps) {
   const [isMinimized, setIsMinimized] = useState(false);
-  const [credentials, setCredentials] = useState<{ apiKey?: string; baseUrl: string } | null>(
-    initialConfig.baseUrl ? { apiKey: initialConfig.apiKey, baseUrl: initialConfig.baseUrl } : null
+  const [credentials, setCredentials] = useState<{ accessToken?: string; baseUrl: string } | null>(
+    initialConfig.baseUrl ? { accessToken: initialConfig.accessToken, baseUrl: initialConfig.baseUrl } : null
   );
 
   // Merge initial config with user-provided credentials
@@ -28,7 +29,7 @@ export function App({ config: initialConfig, onClose }: AppProps) {
     }
     return {
       ...initialConfig,
-      apiKey: credentials.apiKey,
+      accessToken: credentials.accessToken,
       baseUrl: credentials.baseUrl,
     };
   }, [initialConfig, credentials]);
@@ -40,19 +41,40 @@ export function App({ config: initialConfig, onClose }: AppProps) {
     elapsedTime,
     result,
     errorMessage,
+    initializeSDK,
     startRecording,
     pauseRecording,
     resumeRecording,
     stopRecording,
+    retryPolling,
     reset,
   } = useScribeSession(config);
+
+  // Initialize SDK when credentials are set
+  useEffect(() => {
+    if (credentials?.baseUrl) {
+      initializeSDK();
+    }
+  }, [credentials, initializeSDK]);
+
+  // Start new recording - goes back to config screen
+  const handleStartNewRecording = useCallback(() => {
+    reset();
+    setCredentials(null);
+  }, [reset]);
+
+  // Handle EMR selection
+  const handleSelectEMR = useCallback((emrId: string) => {
+    console.log('Selected EMR:', emrId);
+    // TODO: Handle EMR selection logic
+  }, []);
 
   if (isMinimized) {
     return null;
   }
 
-  const handleConfigSubmit = (apiKey: string, baseUrl: string) => {
-    setCredentials({ apiKey, baseUrl });
+  const handleConfigSubmit = (accessToken: string, baseUrl: string) => {
+    setCredentials({ accessToken, baseUrl });
   };
 
   const renderContent = () => {
@@ -61,7 +83,7 @@ export function App({ config: initialConfig, onClose }: AppProps) {
       return (
         <ConfigState
           onSubmit={handleConfigSubmit}
-          initialApiKey={initialConfig.apiKey || ''}
+          initialAccessToken={initialConfig.accessToken || ''}
           initialBaseUrl={initialConfig.baseUrl || ''}
         />
       );
@@ -90,10 +112,25 @@ export function App({ config: initialConfig, onClose }: AppProps) {
         return <ProcessingState />;
 
       case 'results':
-        return result ? <ResultsState result={result} onNewRecording={reset} /> : null;
+        return result ? (
+          <ResultsState
+            result={result}
+            onNewRecording={handleStartNewRecording}
+            onSelectEMR={handleSelectEMR}
+          />
+        ) : null;
+
+      case 'polling_error':
+        return (
+          <PollingErrorState
+            message={errorMessage}
+            onRetry={retryPolling}
+            onStartNew={handleStartNewRecording}
+          />
+        );
 
       case 'error':
-        return <ErrorState message={errorMessage} onRetry={reset} />;
+        return <ErrorState message={errorMessage} onRetry={handleStartNewRecording} />;
 
       default:
         return <IdleState onStartRecording={startRecording} />;

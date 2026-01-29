@@ -24,7 +24,7 @@ export default defineConfig({
       },
     },
     cssCodeSplit: false,
-    minify: 'terser',
+    minify: 'esbuild',
   },
   server: {
     port: 3000,
