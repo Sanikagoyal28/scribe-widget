@@ -23,11 +23,11 @@
     "storage",
     "activeTab",
     "scripting",
-    "webNavigation"
+    "webNavigation",
+    "windows",
+    "permissions"
   ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
+  "host_permissions": ["<all_urls>"],
   "side_panel": {
     "default_path": "sidepanel.html"
   },
@@ -38,8 +38,7 @@
     {
       "matches": ["<all_urls>"],
       "js": ["content-script.js"],
-      "run_at": "document_end",
-      "all_frames": true
+      "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [

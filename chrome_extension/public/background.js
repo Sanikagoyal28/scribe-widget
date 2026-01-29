@@ -1,71 +1,51 @@
 // Background service worker for the Chrome extension
+import audioRecordingManager from './audio-recording';
+
 
 // Open side panel when extension icon is clicked
 chrome.action.onClicked.addListener(async (tab) => {
   await chrome.sidePanel.open({ tabId: tab.id });
 });
 
+
 // Set side panel behavior
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
-
-// Store pending permission request callback
-let pendingPermissionCallback = null;
 
 // Handle messages
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('[EkaScribe] Background received message:', message);
 
-  // Message from iframe - microphone permission result
-  if (message.command === 'micPermissionResult') {
-    console.log('[EkaScribe] Mic permission result:', message.granted);
-
-    // If we have a pending callback, respond to it
-    if (pendingPermissionCallback) {
-      pendingPermissionCallback({
-        granted: message.granted,
-        error: message.error
-      });
-      pendingPermissionCallback = null;
-    }
-    return;
-  }
-
   // Message from side panel - request microphone permission
-  if (message.action === 'GRANT_MICROPHONE_PERMISSION') {
-    console.log('[EkaScribe] Forwarding permission request to content script');
+  if (message.action === 'CHECK_MICROPHONE_PERMISSION') {
+    (async () => {
+      try {
+        console.log('EkaScribe- Checking microphone permission');
+        const result = await audioRecordingManager.checkMicrophonePermission();
 
-    // Store the callback to respond later when iframe sends result
-    pendingPermissionCallback = sendResponse;
+        if (!result.granted && result.micType === 'prompt') {
+          const ekaTabs = await chrome.tabs.query({active: true, currentWindow: true});
+          if (ekaTabs.length > 0 && ekaTabs[0].id) {
+            const tabId = ekaTabs[0].id;
+            await chrome.tabs.update(tabId, { active: true });
+            await chrome.tabs.reload(tabId);
 
-    // Forward to content script to inject iframe
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: 'GRANT_MICROPHONE_PERMISSION'
-        }, (response) => {
-          if (chrome.runtime.lastError) {
-            console.error('[EkaScribe] Error:', chrome.runtime.lastError.message);
-            // If content script injection failed, respond with error
-            if (pendingPermissionCallback) {
-              pendingPermissionCallback({
-                granted: false,
-                error: chrome.runtime.lastError.message
-              });
-              pendingPermissionCallback = null;
-            }
+            await sendMessageToContentScript(tabId, 'GRANT_MICROPHONE_PERMISSION');
           } else {
-            console.log('[EkaScribe] Content script response:', response);
-            // Content script acknowledged - now wait for iframe result
+            const newTab = await chrome.tabs.create({ url: ekaUrl });
+            await sendMessageToContentScript(newTab.id, 'GRANT_MICROPHONE_PERMISSION');
           }
+        }
+        console.log('Microphone permission check result:', result);
+        sendResponse(result);
+      } catch (error) {
+        console.log('error in microphone permission in background', error);
+        sendResponse({
+          granted: false,
+          message: 'Unable to access microphone. Please check permissions.',
+          error: error.message,
         });
-      } else {
-        // No active tab found
-        sendResponse({ granted: false, error: 'No active tab found' });
-        pendingPermissionCallback = null;
       }
-    });
-
-    // Return true to indicate we'll respond asynchronously
+    })();
     return true;
   }
 

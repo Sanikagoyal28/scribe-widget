@@ -128,13 +128,14 @@ export function useScribeSession(config: ScribeConfig): UseScribeSessionReturn {
   }, [config.accessToken, config.baseUrl, config.debug, log]);
 
   // Request microphone permission via content script
-  const requestMicrophonePermission = useCallback(async (): Promise<boolean> => {
+  const requestMicrophonePermission = async (): Promise<boolean> => {
     try {
       log('Requesting microphone permission...');
       const response = await chrome.runtime.sendMessage({
-        action: 'GRANT_MICROPHONE_PERMISSION',
-        target: 'content-script',
+        action: 'CHECK_MICROPHONE_PERMISSION',
       });
+
+      console.log('Microphone permission response:', response);
 
       if (response?.granted) {
         log('Microphone permission granted');
@@ -147,7 +148,7 @@ export function useScribeSession(config: ScribeConfig): UseScribeSessionReturn {
       log('Error requesting microphone permission:', error);
       return false;
     }
-  }, [log]);
+  };
 
   // Start recording
   const startRecording = useCallback(async () => {
@@ -189,7 +190,14 @@ export function useScribeSession(config: ScribeConfig): UseScribeSessionReturn {
       log('Failed to start recording', error);
       showError('Failed to start recording. Please try again.');
     }
-  }, [config.baseUrl, config.languageHint, log, showError, startTimer, requestMicrophonePermission]);
+  }, [
+    config.baseUrl,
+    config.languageHint,
+    log,
+    showError,
+    startTimer,
+    requestMicrophonePermission,
+  ]);
 
   // Pause recording
   const pauseRecording = useCallback(() => {
