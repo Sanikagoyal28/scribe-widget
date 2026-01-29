@@ -32,6 +32,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.action === 'ekascribe-data') {
+    console.log('Ekascribe- ekascribe-data received');
+    window.dispatchEvent(
+      new CustomEvent('scribe-protocol-data', {
+        detail: { value: message.value },
+      })
+    );
+    return;
+  }
+
   return true;
 });
 
