@@ -4,6 +4,11 @@ import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    // Fix "process is not defined" error for browser
+    'process.env.NODE_ENV': JSON.stringify('production'),
+    'process.env': JSON.stringify({}),
+  },
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.tsx'),
@@ -12,8 +17,9 @@ export default defineConfig({
       formats: ['umd', 'es'],
     },
     rollupOptions: {
-      // Don't externalize React - bundle it for standalone use
       output: {
+        // Use named exports to avoid the .default issue
+        exports: 'named',
         globals: {},
       },
     },

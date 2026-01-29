@@ -7,7 +7,11 @@ interface ConfigStateProps {
   initialBaseUrl?: string;
 }
 
-export function ConfigState({ onSubmit, initialApiKey = '', initialBaseUrl = '' }: ConfigStateProps) {
+export function ConfigState({
+  onSubmit,
+  initialApiKey = '',
+  initialBaseUrl = '',
+}: ConfigStateProps) {
   const [apiKey, setApiKey] = useState(initialApiKey);
   const [baseUrl, setBaseUrl] = useState(initialBaseUrl);
   const [error, setError] = useState('');
@@ -25,7 +29,12 @@ export function ConfigState({ onSubmit, initialApiKey = '', initialBaseUrl = '' 
   };
 
   return (
-    <div className="config-state">
+    <div
+      className="config-state"
+      style={{
+        zIndex: 9999,
+      }}
+    >
       <div className="logo">
         <div className="logo-icon">
           <LogoIcon />

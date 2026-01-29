@@ -44,18 +44,12 @@ class ScribeWidget {
   private render(): void {
     if (!this.root || !this.visible) return;
 
-    this.root.render(
-      <App
-        config={this.config}
-        onClose={() => this.hide()}
-      />
-    );
+    this.root.render(<App config={this.config} onClose={() => this.hide()} />);
   }
 
   public mount(target?: HTMLElement | string): void {
-    const targetEl = typeof target === 'string'
-      ? document.querySelector(target)
-      : target || document.body;
+    const targetEl =
+      typeof target === 'string' ? document.querySelector(target) : target || document.body;
 
     if (targetEl) {
       targetEl.appendChild(this.container);
@@ -87,37 +81,60 @@ class ScribeWidget {
   }
 }
 
-// Global initialization function for script tag usage
+// Global initialization function
 let widgetInstance: ScribeWidget | null = null;
 
-function initEkaScribe(config: ScribeWidgetConfig): ScribeWidget {
+function init(config: ScribeWidgetConfig = {} as ScribeWidgetConfig): ScribeWidget {
   if (widgetInstance) {
     widgetInstance.unmount();
   }
+
+  console.log(config, 'config - WIDGET');
   widgetInstance = new ScribeWidget(config);
   widgetInstance.mount();
   return widgetInstance;
 }
 
-function getEkaScribe(): ScribeWidget | null {
+function getInstance(): ScribeWidget | null {
   return widgetInstance;
 }
 
-// Expose to window for script tag usage
-if (typeof window !== 'undefined') {
-  (window as Window & { EkaScribe?: unknown }).EkaScribe = {
-    init: initEkaScribe,
-    getInstance: getEkaScribe,
-    Widget: ScribeWidget,
-  };
-}
+// Named exports - these become window.EkaScribe.init, window.EkaScribe.getInstance, etc. in UMD
+export { ScribeWidget, init, getInstance };
 
-// Named exports for ES module usage
-export { ScribeWidget, initEkaScribe as init, getEkaScribe as getInstance };
-
-// Default export for module usage
-export default {
-  init: initEkaScribe,
-  getInstance: getEkaScribe,
+// Default export for ES module convenience
+const EkaScribe = {
+  init,
+  getInstance,
   Widget: ScribeWidget,
 };
+
+export default EkaScribe;
+
+// Auto-initialize when script loads in browser
+// Widget will show config form since no apiKey/baseUrl provided
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  const autoInit = () => {
+    // Don't auto-init if already initialized or if data-no-auto-init attribute is present
+    const scriptTag =
+      document.currentScript || document.querySelector('script[src*="scribe-widget"]');
+    if (scriptTag?.hasAttribute('data-no-auto-init')) {
+      return;
+    }
+
+    console.log(widgetInstance, 'widget instance');
+    if (!widgetInstance) {
+      init({});
+    }
+  };
+
+  // Run after DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded - WIDGET', autoInit);
+  } else {
+    // DOM already loaded, init immediately
+
+    console.log('load document - WIDGET');
+    autoInit();
+  }
+}

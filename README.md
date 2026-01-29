@@ -228,3 +228,4 @@ src/
    - Returns transcription results
 
 4. **Callbacks**: Results are passed back via the `onResult` callback, allowing the host page to use the data.
+

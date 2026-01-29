@@ -17,7 +17,7 @@ interface AppProps {
 
 export function App({ config: initialConfig, onClose }: AppProps) {
   const [isMinimized, setIsMinimized] = useState(false);
-  const [credentials, setCredentials] = useState<{ apiKey: string; baseUrl: string } | null>(
+  const [credentials, setCredentials] = useState<{ apiKey?: string; baseUrl: string } | null>(
     initialConfig.baseUrl ? { apiKey: initialConfig.apiKey, baseUrl: initialConfig.baseUrl } : null
   );
 
@@ -90,9 +90,7 @@ export function App({ config: initialConfig, onClose }: AppProps) {
         return <ProcessingState />;
 
       case 'results':
-        return result ? (
-          <ResultsState result={result} onNewRecording={reset} />
-        ) : null;
+        return result ? <ResultsState result={result} onNewRecording={reset} /> : null;
 
       case 'error':
         return <ErrorState message={errorMessage} onRetry={reset} />;
