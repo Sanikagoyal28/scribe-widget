@@ -22,7 +22,7 @@ class ScribeWidget {
 
     // Create container element
     this.container = document.createElement('div');
-    this.container.id = 'eka-scribe-widget';
+    this.container.id = 'med-scribe-widget';
 
     // Attach shadow DOM
     this.shadowRoot = this.container.attachShadow({ mode: 'closed' });
@@ -34,7 +34,7 @@ class ScribeWidget {
 
     // Create React mount point
     const mountPoint = document.createElement('div');
-    mountPoint.id = 'eka-scribe-root';
+    mountPoint.id = 'med-scribe-root';
     this.shadowRoot.appendChild(mountPoint);
 
     // Create React root

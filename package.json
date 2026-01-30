@@ -1,7 +1,7 @@
 {
   "name": "scribe-widget",
   "version": "1.0.17",
-  "description": "Floating panel widget for medical transcription using eka.scribe",
+  "description": "Floating panel widget for medical transcription using med.scribe",
   "main": "dist/scribe-widget.umd.js",
   "module": "dist/scribe-widget.es.js",
   "types": "dist/index.d.ts",

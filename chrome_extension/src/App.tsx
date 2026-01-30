@@ -1343,7 +1343,7 @@ export function App() {
     <div className="side-panel">
       <header className="panel-header">
         <div className="header-brand">
-          <span className="brand-text">eka.scribe</span>
+          <span className="brand-text">med.scribe</span>
         </div>
         <button className="settings-btn" onClick={handleSettings} title="Settings">
           <SettingsIcon />

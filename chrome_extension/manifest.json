@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "Eka Scribe",
-  "description": "Medical transcription powered by Eka Care - Record, transcribe, and integrate with EMRs",
+  "name": "Med Scribe",
+  "description": "Medical transcription - Record, transcribe, and integrate with EMRs",
   "version": "1.0.0",
   "action": {
-    "default_title": "Open Eka Scribe",
+    "default_title": "Open Med Scribe",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
