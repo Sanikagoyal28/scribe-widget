@@ -281,6 +281,16 @@ body {
   line-height: 1.6;
 }
 
+.idle-error {
+  color: var(--danger);
+  font-size: 13px;
+  background: #fef2f2;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  max-width: 280px;
+  margin-top: 8px;
+}
+
 .record-btn {
   display: flex;
   align-items: center;
@@ -298,9 +308,14 @@ body {
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
 }
 
-.record-btn:hover {
+.record-btn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+}
+
+.record-btn:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
 }
 
 .mic-icon {
@@ -541,6 +556,12 @@ body {
   width: 64px;
   height: 64px;
   border-width: 4px;
+}
+
+.spinner.small {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
 }
 
 @keyframes spin {

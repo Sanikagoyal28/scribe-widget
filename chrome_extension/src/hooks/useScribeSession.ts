@@ -7,6 +7,7 @@ interface UseScribeSessionReturn {
   elapsedTime: number;
   result: GetSessionStatusResponse | null;
   errorMessage: string;
+  isStarting: boolean;
   initializeSDK: () => Promise<void>;
   startRecording: () => Promise<void>;
   pauseRecording: () => void;
@@ -21,6 +22,7 @@ export function useScribeSession(config: ScribeConfig): UseScribeSessionReturn {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [result, setResult] = useState<GetSessionStatusResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isStarting, setIsStarting] = useState(false);
 
   const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -41,42 +43,60 @@ export function useScribeSession(config: ScribeConfig): UseScribeSessionReturn {
     setState(isPollingError ? 'polling_error' : 'error');
   }, []);
 
+  // Helper function to delay execution
+  const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
   const pollForResults = useCallback(async (): Promise<boolean> => {
     if (!clientRef.current) {
       showError('SDK not initialized. Please try again.', true);
       return false;
     }
 
-    try {
-      setState('processing');
-      log('Polling for completion...');
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY_MS = 2000;
 
-      const finalResult = await clientRef.current.pollForCompletion(undefined, {
-        maxAttempts: 60,
-        intervalMs: 2000,
-        onProgress: (status) => {
-          log('Status update:', status.status);
-        },
-      });
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        setState('processing');
+        log(`Polling for completion... (attempt ${attempt}/${MAX_RETRIES})`);
 
-      setResult(finalResult);
-      log('Final result:', finalResult);
+        const finalResult = await clientRef.current.pollForCompletion(undefined, {
+          maxAttempts: 60,
+          intervalMs: 2000,
+          onProgress: (status) => {
+            log('Status update:', status.status);
+          },
+        });
 
-      setState('results');
+        setResult(finalResult);
+        log('Final result:', finalResult);
 
-      if (config.onResult) {
-        config.onResult(finalResult);
+        setState('results');
+
+        if (config.onResult) {
+          config.onResult(finalResult);
+        }
+
+        return true;
+      } catch (error) {
+        log(`Polling attempt ${attempt} failed:`, error);
+
+        if (attempt < MAX_RETRIES) {
+          log(`Retrying in ${RETRY_DELAY_MS / 1000} seconds...`);
+          await delay(RETRY_DELAY_MS);
+        } else {
+          // All retries exhausted
+          log('All polling retries exhausted');
+          showError('Failed to fetch results. Please retry.', true);
+          if (config.onError && error instanceof Error) {
+            config.onError(error);
+          }
+          return false;
+        }
       }
-
-      return true;
-    } catch (error) {
-      log('Polling failed', error);
-      showError('Failed to fetch results. Please retry.', true);
-      if (config.onError && error instanceof Error) {
-        config.onError(error);
-      }
-      return false;
     }
+
+    return false;
   }, [config, log, showError]);
 
   // Timer functions
@@ -150,51 +170,74 @@ export function useScribeSession(config: ScribeConfig): UseScribeSessionReturn {
     }
   };
 
-  // Start recording
+  // Start recording - initializes SDK first, then checks permission, then starts
   const startRecording = useCallback(async () => {
     if (!config.baseUrl) {
-      showError('API not configured. Please configure first.');
+      setErrorMessage('API not configured. Please configure first.');
       return;
     }
 
-    if (!clientRef.current) {
-      showError('SDK not initialized. Please try again.');
-      return;
-    }
+    // Clear any previous error and show loading state
+    setErrorMessage('');
+    setIsStarting(true);
+    log('Step 1: Checking microphone permission...');
 
-    setState('permission');
-
-    // Request microphone permission
+    // Step 2: Check microphone permission FIRST
     const permissionGranted = await requestMicrophonePermission();
 
     if (!permissionGranted) {
-      showError('Microphone access is required to record.');
+      setIsStarting(false);
+      setErrorMessage('Microphone access is required to record.');
       return;
     }
 
-    // Permission granted - start SDK recording
+    // Step 3: Initialize SDK if not already initialized
+    if (!clientRef.current) {
+      log('Step 2: Initializing SDK...');
+      try {
+        ScribeClient.resetInstance();
+        clientRef.current = ScribeClient.getInstance({
+          accessToken: config.accessToken,
+          baseUrl: config.baseUrl,
+          debug: config.debug,
+        });
+        await clientRef.current.init();
+        log('SDK initialized successfully');
+      } catch (error) {
+        log('Failed to initialize SDK', error);
+        setIsStarting(false);
+        setErrorMessage('Failed to initialize. Please try again.');
+        return;
+      }
+    }
+
+    // Step 4: Permission granted & SDK ready - start recording
+    log('Step 3: Starting recording...');
     try {
       await clientRef.current.startRecording({
         templates: ['eka_emr_template'],
         languageHint: config.languageHint,
       });
 
+      setIsStarting(false);
       setState('recording');
       startTimeRef.current = Date.now();
       pausedTimeRef.current = 0;
       setElapsedTime(0);
       startTimer();
 
-      log('Recording started');
+      log('Recording started successfully');
     } catch (error) {
       log('Failed to start recording', error);
-      showError('Failed to start recording. Please try again.');
+      setIsStarting(false);
+      setErrorMessage('Failed to start recording. Please try again.');
     }
   }, [
+    config.accessToken,
     config.baseUrl,
+    config.debug,
     config.languageHint,
     log,
-    showError,
     startTimer,
     requestMicrophonePermission,
   ]);
@@ -260,6 +303,7 @@ export function useScribeSession(config: ScribeConfig): UseScribeSessionReturn {
     setResult(null);
     setErrorMessage('');
     setElapsedTime(0);
+    setIsStarting(false);
     setState('idle');
   }, []);
 
@@ -268,6 +312,7 @@ export function useScribeSession(config: ScribeConfig): UseScribeSessionReturn {
     elapsedTime,
     result,
     errorMessage,
+    isStarting,
     initializeSDK,
     startRecording,
     pauseRecording,

@@ -1,5 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { ConfigState } from './components/ConfigState';
+import { useCallback } from 'react';
 import { IdleState } from './components/IdleState';
 import { PermissionState } from './components/PermissionState';
 import { RecordingState } from './components/RecordingState';
@@ -11,49 +10,32 @@ import { useScribeSession } from './hooks/useScribeSession';
 import { ScribeConfig } from './types';
 import { SettingsIcon } from './components/Icons';
 
+// Hardcoded credentials - TODO: Replace with actual values
+const HARDCODED_CONFIG: ScribeConfig = {
+  accessToken:
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJFQ18xNzY5NzUwMTMxNDM3IiwiYi1pZCI6IjcxNzQ3Njg1NTEyNDI4ODMiLCJjLWlkIjoiRUNfMTc2OTc1MDEzMTQzNyIsImNjIjp7InBzdCI6ImZhbHNlIn0sImlhdCI6MTc2OTc1MDE2MSwiaWRwIjoiYXBpLWtleSIsImlzcyI6ImVtci5la2EuY2FyZSIsImp0aSI6IjY0Y2FiZTcwLTA5MWUtNDE3My05OWFkLWFmMDFmYjVmNmI4MSIsIm9pZCI6IjE3Njk3NTAxNjEyNDU0NSIsInBzdCI6ImZhbHNlIiwidXVpZCI6ImNlNzFjOGM1LWY4MjktNDAwYS05N2ZhLTI0NjljMGQzNDI4NSIsInctaWQiOiI3MTc0NzY4NTUxMjQyODgzIiwidy1uIjoiVmlja3ktVGl3YXJpIn0.upXKvw63I4Xpv8i1tTRy9qGd_sYFGomGSITnDV-e_d4', // Add your access token here if needed
+  baseUrl: 'https://api.eka.care/voice/v1', // Replace with your actual base URL
+  debug: true,
+};
+
 export function App() {
-  const [credentials, setCredentials] = useState<{ accessToken?: string; baseUrl: string } | null>(
-    null
-  );
-
-  const config = useMemo<ScribeConfig>(() => {
-    if (!credentials) {
-      return { baseUrl: '' };
-    }
-    return {
-      accessToken: credentials.accessToken,
-      baseUrl: credentials.baseUrl,
-      debug: true,
-    };
-  }, [credentials]);
-
-  const needsConfig = !credentials;
-
   const {
     state,
     elapsedTime,
     result,
     errorMessage,
-    initializeSDK,
+    isStarting,
     startRecording,
     pauseRecording,
     resumeRecording,
     stopRecording,
     retryPolling,
     reset,
-  } = useScribeSession(config);
+  } = useScribeSession(HARDCODED_CONFIG);
 
-  // Initialize SDK when credentials are set
-  useEffect(() => {
-    if (credentials?.baseUrl) {
-      initializeSDK();
-    }
-  }, [credentials, initializeSDK]);
-
-  // Start new recording - goes back to config screen
+  // Start new recording - just reset state
   const handleStartNewRecording = useCallback(() => {
     reset();
-    setCredentials(null);
   }, [reset]);
 
   // Hardcoded test data for EMR
@@ -1251,25 +1233,20 @@ export function App() {
     }
   }, []);
 
-  const handleConfigSubmit = (accessToken: string, baseUrl: string) => {
-    setCredentials({ accessToken, baseUrl });
-  };
-
   const handleSettings = () => {
-    setCredentials(null);
     reset();
   };
 
   const renderContent = () => {
-    if (needsConfig) {
-      return (
-        <ConfigState onSubmit={handleConfigSubmit} onTestEMR={() => handleSelectEMR('eka_emr')} />
-      );
-    }
-
     switch (state) {
       case 'idle':
-        return <IdleState onStartRecording={startRecording} />;
+        return (
+          <IdleState
+            onStartRecording={startRecording}
+            isStarting={isStarting}
+            errorMessage={errorMessage}
+          />
+        );
 
       case 'permission':
         return <PermissionState onRequestPermission={startRecording} />;
@@ -1311,7 +1288,13 @@ export function App() {
         return <ErrorState message={errorMessage} onRetry={handleStartNewRecording} />;
 
       default:
-        return <IdleState onStartRecording={startRecording} />;
+        return (
+          <IdleState
+            onStartRecording={startRecording}
+            isStarting={isStarting}
+            errorMessage={errorMessage}
+          />
+        );
     }
   };
 
@@ -1321,11 +1304,9 @@ export function App() {
         <div className="header-brand">
           <span className="brand-text">eka.scribe</span>
         </div>
-        {!needsConfig && (
-          <button className="settings-btn" onClick={handleSettings} title="Settings">
-            <SettingsIcon />
-          </button>
-        )}
+        <button className="settings-btn" onClick={handleSettings} title="Settings">
+          <SettingsIcon />
+        </button>
       </header>
       <main className="panel-content">{renderContent()}</main>
     </div>
