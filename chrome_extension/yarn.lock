@@ -745,10 +745,10 @@ lru-cache@^5.1.1:
   dependencies:
     yallist "^3.0.2"
 
-med-scribe-alliance-ts-sdk@1.0.12:
-  version "1.0.12"
-  resolved "https://registry.yarnpkg.com/med-scribe-alliance-ts-sdk/-/med-scribe-alliance-ts-sdk-1.0.12.tgz#911792d47325c60cb4b729f9d77553915b31048c"
-  integrity sha512-Y8zGyZ7DrXPtG937GSZuajso6k1+MbFemmRbN3MK9dqAx4CxnCo6Py3YbhaX/inaxZ/lXSbX0yHuNzDZ9tuVQg==
+med-scribe-alliance-ts-sdk@1.0.13:
+  version "1.0.13"
+  resolved "https://registry.yarnpkg.com/med-scribe-alliance-ts-sdk/-/med-scribe-alliance-ts-sdk-1.0.13.tgz#14138f2c4df74e42031b0f1d33f0727b7b9fdf96"
+  integrity sha512-V2gcOPJ4xEgxu/e416NaiPYxdYPkK08zHzWz+Qx5DKv8UnYA+Dp9OcAm1APE95gMEvJwmAGpIlAWF1KSqVC/QQ==
   dependencies:
     "@breezystack/lamejs" "^1.2.7"
     "@ricky0123/vad-web" "^0.0.22"

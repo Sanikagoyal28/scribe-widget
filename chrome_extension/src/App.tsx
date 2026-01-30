@@ -1220,13 +1220,10 @@ export function App() {
 
   // Get template data from result
   const getTemplateData = useCallback(() => {
-    // if (!result?.templates) return null;
-    // // Get eka_emr_template data or first available template
-    // const templateEntry = result.templates['eka_emr_template'];
-    // // return templateEntry?.data || null;
-
-    // TODO: remove hardcoded data
-    return testStructuredSummary;
+    if (!result?.templates) return null;
+    // Get eka_emr_template data or first available template
+    const templateEntry = result.templates['eka_emr_template'];
+    return templateEntry?.fhir || testStructuredSummary;
   }, [result]);
 
   // Handle push to EMR - sends data to content script
@@ -1309,7 +1306,7 @@ export function App() {
       case 'emr_preview':
         return (
           <EMRPreviewState
-            templateData={getTemplateData() || testStructuredSummary}
+            templateData={getTemplateData()}
             onBack={goBackToResults}
             onPushToEMR={handlePushToEMR}
             isPushing={isPushing}
