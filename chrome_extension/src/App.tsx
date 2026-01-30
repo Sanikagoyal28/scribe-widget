@@ -1,9 +1,10 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { IdleState } from './components/IdleState';
 import { PermissionState } from './components/PermissionState';
 import { RecordingState } from './components/RecordingState';
 import { ProcessingState } from './components/ProcessingState';
 import { ResultsState } from './components/ResultsState';
+import { EMRPreviewState } from './components/EMRPreviewState';
 import { ErrorState } from './components/ErrorState';
 import { PollingErrorState } from './components/PollingErrorState';
 import { useScribeSession } from './hooks/useScribeSession';
@@ -31,7 +32,11 @@ export function App() {
     stopRecording,
     retryPolling,
     reset,
+    goToEMRPreview,
+    goBackToResults,
   } = useScribeSession(HARDCODED_CONFIG);
+
+  const [isPushing, setIsPushing] = useState(false);
 
   // Start new recording - just reset state
   const handleStartNewRecording = useCallback(() => {
@@ -1201,37 +1206,63 @@ export function App() {
     ],
   };
 
-  // Handle EMR selection - sends data to content script
-  const handleSelectEMR = useCallback(async (emrId: string) => {
-    console.log('[EkaScribe] Selected EMR:', emrId);
+  // Handle EMR selection - navigate to preview screen
+  const handleSelectEMR = useCallback(
+    (emrId: string) => {
+      console.log('[EkaScribe] Selected EMR:', emrId);
 
-    if (emrId === 'eka_emr') {
-      try {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (tab?.id) {
-          console.log('[EkaScribe] Sending data to tab:', tab.id);
-          chrome.tabs.sendMessage(
-            tab.id,
-            {
-              action: 'scribe-protocol-data',
-              value: testStructuredSummary,
-            },
-            (response) => {
-              if (chrome.runtime.lastError) {
-                console.error('[EkaScribe] Error sending data:', chrome.runtime.lastError);
-              } else {
-                console.log('[EkaScribe] Data sent successfully, response:', response);
-              }
-            }
-          );
-        } else {
-          console.error('[EkaScribe] No active tab found');
-        }
-      } catch (error) {
-        console.error('[EkaScribe] Error sending EMR data:', error);
+      if (emrId === 'eka_emr') {
+        goToEMRPreview();
       }
+    },
+    [goToEMRPreview]
+  );
+
+  // Get template data from result
+  const getTemplateData = useCallback(() => {
+    // if (!result?.templates) return null;
+    // // Get eka_emr_template data or first available template
+    // const templateEntry = result.templates['eka_emr_template'];
+    // // return templateEntry?.data || null;
+
+    // TODO: remove hardcoded data
+    return testStructuredSummary;
+  }, [result]);
+
+  // Handle push to EMR - sends data to content script
+  const handlePushToEMR = useCallback(async () => {
+    setIsPushing(true);
+    console.log('[EkaScribe] Pushing to EMR...');
+
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id) {
+        const templateData = getTemplateData();
+        console.log('[EkaScribe] Sending data to tab:', tab.id);
+        chrome.tabs.sendMessage(
+          tab.id,
+          {
+            action: 'scribe-protocol-data',
+            value: templateData || testStructuredSummary,
+          },
+          (response) => {
+            setIsPushing(false);
+            if (chrome.runtime.lastError) {
+              console.error('[EkaScribe] Error sending data:', chrome.runtime.lastError);
+            } else {
+              console.log('[EkaScribe] Data sent successfully, response:', response);
+            }
+          }
+        );
+      } else {
+        console.error('[EkaScribe] No active tab found');
+        setIsPushing(false);
+      }
+    } catch (error) {
+      console.error('[EkaScribe] Error sending EMR data:', error);
+      setIsPushing(false);
     }
-  }, []);
+  }, [getTemplateData]);
 
   const handleSettings = () => {
     reset();
@@ -1274,6 +1305,16 @@ export function App() {
             onSelectEMR={handleSelectEMR}
           />
         ) : null;
+
+      case 'emr_preview':
+        return (
+          <EMRPreviewState
+            templateData={getTemplateData() || testStructuredSummary}
+            onBack={goBackToResults}
+            onPushToEMR={handlePushToEMR}
+            isPushing={isPushing}
+          />
+        );
 
       case 'polling_error':
         return (

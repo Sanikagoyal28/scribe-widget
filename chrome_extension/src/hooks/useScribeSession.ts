@@ -15,6 +15,8 @@ interface UseScribeSessionReturn {
   stopRecording: () => Promise<void>;
   retryPolling: () => Promise<void>;
   reset: () => void;
+  goToEMRPreview: () => void;
+  goBackToResults: () => void;
 }
 
 export function useScribeSession(config: ScribeConfig): UseScribeSessionReturn {
@@ -307,6 +309,14 @@ export function useScribeSession(config: ScribeConfig): UseScribeSessionReturn {
     setState('idle');
   }, []);
 
+  const goToEMRPreview = useCallback(() => {
+    setState('emr_preview');
+  }, []);
+
+  const goBackToResults = useCallback(() => {
+    setState('results');
+  }, []);
+
   return {
     state,
     elapsedTime,
@@ -320,5 +330,7 @@ export function useScribeSession(config: ScribeConfig): UseScribeSessionReturn {
     stopRecording,
     retryPolling,
     reset,
+    goToEMRPreview,
+    goBackToResults,
   };
 }

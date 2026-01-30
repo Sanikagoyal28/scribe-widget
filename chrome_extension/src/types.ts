@@ -7,6 +7,7 @@ export type WidgetState =
   | 'paused'
   | 'processing'
   | 'results'
+  | 'emr_preview'
   | 'error'
   | 'polling_error';
 
