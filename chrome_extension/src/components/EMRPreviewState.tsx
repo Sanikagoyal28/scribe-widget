@@ -2,15 +2,9 @@ interface EMRPreviewStateProps {
   templateData: any;
   onBack: () => void;
   onPushToEMR: () => void;
-  isPushing?: boolean;
 }
 
-export function EMRPreviewState({
-  templateData,
-  onBack,
-  onPushToEMR,
-  isPushing = false,
-}: EMRPreviewStateProps) {
+export function EMRPreviewState({ templateData, onBack, onPushToEMR }: EMRPreviewStateProps) {
   return (
     <div className="emr-preview-state">
       <div className="emr-preview-header">
@@ -30,19 +24,8 @@ export function EMRPreviewState({
       </div>
 
       <div className="emr-preview-actions">
-        <button
-          className="primary-btn"
-          onClick={onPushToEMR}
-          disabled={isPushing}
-        >
-          {isPushing ? (
-            <>
-              <span className="spinner small" />
-              Pushing...
-            </>
-          ) : (
-            'Push to EMR'
-          )}
+        <button className="primary-btn" onClick={onPushToEMR}>
+          Push To EMR
         </button>
       </div>
     </div>

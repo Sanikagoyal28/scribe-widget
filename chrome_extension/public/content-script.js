@@ -33,13 +33,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.action === 'scribe-protocol-data') {
-    console.log('Ekascribe- ekascribe-data received', message.value);
+    console.log('[EkaScribe] scribe-protocol-data received', message.value);
     window.dispatchEvent(
       new CustomEvent('scribe-protocol-data', {
         detail: { value: message.value },
       })
     );
-    return;
+
+    return true;
   }
 
   return true;

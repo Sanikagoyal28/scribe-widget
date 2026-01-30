@@ -14,7 +14,7 @@ import { SettingsIcon } from './components/Icons';
 // Hardcoded credentials - TODO: Replace with actual values
 const HARDCODED_CONFIG: ScribeConfig = {
   accessToken:
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJFQ18xNzY5NzUwMTMxNDM3IiwiYi1pZCI6IjcxNzQ3Njg1NTEyNDI4ODMiLCJjLWlkIjoiRUNfMTc2OTc1MDEzMTQzNyIsImNjIjp7InBzdCI6ImZhbHNlIn0sImlhdCI6MTc2OTc1MDE2MSwiaWRwIjoiYXBpLWtleSIsImlzcyI6ImVtci5la2EuY2FyZSIsImp0aSI6IjY0Y2FiZTcwLTA5MWUtNDE3My05OWFkLWFmMDFmYjVmNmI4MSIsIm9pZCI6IjE3Njk3NTAxNjEyNDU0NSIsInBzdCI6ImZhbHNlIiwidXVpZCI6ImNlNzFjOGM1LWY4MjktNDAwYS05N2ZhLTI0NjljMGQzNDI4NSIsInctaWQiOiI3MTc0NzY4NTUxMjQyODgzIiwidy1uIjoiVmlja3ktVGl3YXJpIn0.upXKvw63I4Xpv8i1tTRy9qGd_sYFGomGSITnDV-e_d4', // Add your access token here if needed
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJFQ18xNzY5NzU3OTc4MjQxIiwiYi1pZCI6IjcxNzY3Nzk1MDQ4NDEzMDciLCJjLWlkIjoiRUNfMTc2OTc1Nzk3ODI0MSIsImNjIjp7ImVzYyI6MSwicGV4IjoxNzY4MzQ4ODAwLCJwc3QiOiJmYWxzZSJ9LCJlc2MiOjEsImlhdCI6MTc2OTc1Nzk5MSwiaWRwIjoiYXBpLWtleSIsImlzcyI6ImVtci5la2EuY2FyZSIsImp0aSI6IjZjZDFmNTM5LWRkNzQtNDQxMy04YmFhLTQ2MTFmNzM2Mjg5MyIsIm9pZCI6IjE3Njk3NTc5OTEwMDM3OCIsInBleCI6MTc2ODM0ODgwMCwicHN0IjoiZmFsc2UiLCJ1dWlkIjoiNWQ4ZmQ0Y2UtYTI2NC00MGYzLTk3YWEtODI2ZmZiMjM3YjYxIiwidy1pZCI6IjcxNzY3Nzk1MDQ4NDEzMDciLCJ3LW4iOiJzYW5pa2EtdGVzdCJ9.Q_ORRPLT9MPH4mc6KpRrxn-H6PtUDYVcBlWijrvXoV4',
   baseUrl: 'https://api.eka.care/voice/v1', // Replace with your actual base URL
   debug: true,
 };
@@ -35,8 +35,6 @@ export function App() {
     goToEMRPreview,
     goBackToResults,
   } = useScribeSession(HARDCODED_CONFIG);
-
-  const [isPushing, setIsPushing] = useState(false);
 
   // Start new recording - just reset state
   const handleStartNewRecording = useCallback(() => {
@@ -1228,7 +1226,6 @@ export function App() {
 
   // Handle push to EMR - sends data to content script
   const handlePushToEMR = useCallback(async () => {
-    setIsPushing(true);
     console.log('[EkaScribe] Pushing to EMR...');
 
     try {
@@ -1240,10 +1237,9 @@ export function App() {
           tab.id,
           {
             action: 'scribe-protocol-data',
-            value: templateData || testStructuredSummary,
+            value: templateData,
           },
           (response) => {
-            setIsPushing(false);
             if (chrome.runtime.lastError) {
               console.error('[EkaScribe] Error sending data:', chrome.runtime.lastError);
             } else {
@@ -1253,11 +1249,9 @@ export function App() {
         );
       } else {
         console.error('[EkaScribe] No active tab found');
-        setIsPushing(false);
       }
     } catch (error) {
       console.error('[EkaScribe] Error sending EMR data:', error);
-      setIsPushing(false);
     }
   }, [getTemplateData]);
 
@@ -1309,7 +1303,6 @@ export function App() {
             templateData={getTemplateData()}
             onBack={goBackToResults}
             onPushToEMR={handlePushToEMR}
-            isPushing={isPushing}
           />
         );
 
